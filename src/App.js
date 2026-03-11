@@ -21,7 +21,7 @@ export default function App() {
   const [saving,  setSaving]  = useState(false);
 
   const days    = daysInMonth(year, month);
-  const firstDow = firstDayOfMonth(year, month);
+
   const today   = now.getDate();
   const isCurrentMonth = year === now.getFullYear() && month === now.getMonth();
 
