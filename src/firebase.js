@@ -1,15 +1,6 @@
-// src/firebase.js
-// ─────────────────────────────────────────────────────────────
-//  REPLACE the values below with your own Firebase project config
-//  Steps:
-//  1. Go to https://console.firebase.google.com
-//  2. Create a new project (free)
-//  3. Add a Web App  (</>)
-//  4. Copy the firebaseConfig object values into here
-//  5. In Firebase console → Firestore Database → Create database (test mode)
-// ─────────────────────────────────────────────────────────────
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
+import { getAuth, GoogleAuthProvider } from "firebase/auth";
 
 const firebaseConfig = {
   apiKey:            "AIzaSyDor1fQ88nkI6jweCPfwgvEIfPOsvAMq5Y",
@@ -22,3 +13,5 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
+export const auth = getAuth(app);
+export const googleProvider = new GoogleAuthProvider();
