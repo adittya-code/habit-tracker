@@ -9,7 +9,6 @@ const MONTHS = ["January","February","March","April","May","June",
 const DAYS_SHORT = ["S","M","T","W","T","F","S"];
 
 function daysInMonth(y, m) { return new Date(y, m + 1, 0).getDate(); }
-function firstDayOfMonth(y, m) { return new Date(y, m, 1).getDay(); }
 function docId(y, m) { return `habits_${y}_${String(m+1).padStart(2,"0")}`; }
 
 export default function App() {
