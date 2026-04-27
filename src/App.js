@@ -1,164 +1,134 @@
-import { useState, useEffect, useCallback } from "react";
-import { doc, getDoc, setDoc } from "firebase/firestore";
-import {
-  signInWithPopup,
-  signOut,
-  onAuthStateChanged,
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  RecaptchaVerifier,
-  signInWithPhoneNumber,
-  OAuthProvider
-} from "firebase/auth";
+/* ── Google Fonts ── */
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
 
-import { db, auth, googleProvider } from "./firebase";
-import { HABITS as DEFAULT_HABITS } from "./habits";
-import "./App.css";
+/* ── Reset & Base ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-const MONTHS = ["January","February","March","April","May","June",
-                "July","August","September","October","November","December"];
-const DAYS_SHORT = ["S","M","T","W","T","F","S"];
+:root {
+--bg:#0F0A1E; --surface:#1A1030; --surface2:#231545;
+--border:#2E1F5E; --border2:#3D2B7A;
+--text:#F0EAFF; --text-muted:#9B8EC4;
+--accent:#A78BFA; --accent2:#7C3AED;
+--teal:#2DD4BF; --gold:#FCD34D; --coral:#F87171;
 
-function daysInMonth(y, m) { return new Date(y, m + 1, 0).getDate(); }
-function docId(uid, y, m) { return `${uid}_${y}_${String(m+1).padStart(2,"0")}`; }
+--w0: rgba(45,212,191,0.08);
+--w1: rgba(167,139,250,0.10);
+--w2: rgba(96,165,250,0.08);
+--w3: rgba(251,191,36,0.08);
+--w4: rgba(248,113,113,0.08);
 
-export default function App() {
-  const now = new Date();
-
-  const [user, setUser] = useState(null);
-  const [authLoading, setAuthLoading] = useState(true);
-
-  const [year, setYear] = useState(now.getFullYear());
-  const [month, setMonth] = useState(now.getMonth());
-  const [data, setData] = useState({});
-  const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
-
-  // 🔥 NEW AUTH STATES
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [phone, setPhone] = useState("");
-  const [otp, setOtp] = useState("");
-  const [confirmation, setConfirmation] = useState(null);
-
-  // Settings
-  const [showSettings, setShowSettings] = useState(false);
-  const [habits, setHabits] = useState(DEFAULT_HABITS);
-
-  const days = daysInMonth(year, month);
-
-  // AUTH LISTENER
-  useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (u) => {
-      setUser(u);
-      setAuthLoading(false);
-    });
-    return unsub;
-  }, []);
-
-  // 🔥 EMAIL LOGIN
-  const handleEmailLogin = async () => {
-    try {
-      await signInWithEmailAndPassword(auth, email, password);
-    } catch (err) {
-      alert(err.message);
-    }
-  };
-
-  const handleSignup = async () => {
-    try {
-      await createUserWithEmailAndPassword(auth, email, password);
-    } catch (err) {
-      alert(err.message);
-    }
-  };
-
-  // 🔥 PHONE AUTH
-  useEffect(() => {
-    if (!window.recaptchaVerifier) {
-      window.recaptchaVerifier = new RecaptchaVerifier(auth, "recaptcha-container", {
-        size: "invisible"
-      });
-    }
-  }, []);
-
-  const sendOTP = async () => {
-    try {
-      const result = await signInWithPhoneNumber(auth, phone, window.recaptchaVerifier);
-      setConfirmation(result);
-      alert("OTP sent");
-    } catch (err) {
-      alert(err.message);
-    }
-  };
-
-  const verifyOTP = async () => {
-    try {
-      await confirmation.confirm(otp);
-    } catch {
-      alert("Invalid OTP");
-    }
-  };
-
-  // 🔥 APPLE LOGIN
-  const appleProvider = new OAuthProvider("apple.com");
-
-  const handleAppleLogin = async () => {
-    try {
-      await signInWithPopup(auth, appleProvider);
-    } catch (err) {
-      alert(err.message);
-    }
-  };
-
-  // ================= AUTH UI =================
-  if (authLoading) return <div className="auth-screen"><div className="spinner" /></div>;
-
-  if (!user) return (
-    <div className="auth-screen">
-      <div className="auth-card">
-
-        <div className="auth-icon">◈</div>
-        <h1 className="auth-title">Habit Tracker</h1>
-        <p className="auth-sub">Track your daily habits beautifully</p>
-
-        {/* EMAIL */}
-        <input className="auth-input" placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)} />
-        <input className="auth-input" type="password" placeholder="Password" value={password} onChange={e=>setPassword(e.target.value)} />
-
-        <div className="auth-row">
-          <button className="auth-btn" onClick={handleEmailLogin}>Login</button>
-          <button className="auth-btn outline" onClick={handleSignup}>Signup</button>
-        </div>
-
-        {/* PHONE */}
-        <input className="auth-input" placeholder="+91XXXXXXXXXX" value={phone} onChange={e=>setPhone(e.target.value)} />
-        <button className="auth-btn" onClick={sendOTP}>Send OTP</button>
-
-        <input className="auth-input" placeholder="Enter OTP" value={otp} onChange={e=>setOtp(e.target.value)} />
-        <button className="auth-btn" onClick={verifyOTP}>Verify OTP</button>
-
-        {/* GOOGLE */}
-        <button className="google-btn" onClick={() => signInWithPopup(auth, googleProvider)}>
-          Continue with Google
-        </button>
-
-        {/* APPLE */}
-        <button className="auth-btn black" onClick={handleAppleLogin}>
-          Continue with Apple
-        </button>
-
-        <div id="recaptcha-container"></div>
-
-      </div>
-    </div>
-  );
-
-  // ================= MAIN APP =================
-  return (
-    <div className="app">
-      <button onClick={() => signOut(auth)}>Sign out</button>
-      <h1>Logged in as {user.email || user.phoneNumber}</h1>
-    </div>
-  );
+--font:'DM Sans',sans-serif;
+--mono:'DM Mono',monospace;
+--radius:10px; --radius-sm:6px;
 }
+
+html,body,#root {
+height:100%;
+background:var(--bg);
+color:var(--text);
+font-family:var(--font);
+}
+
+/* ── APP ── */
+.app { min-height:100vh; }
+
+/* ── AUTH SCREEN ── */
+.auth-screen {
+min-height:100vh;
+display:flex;
+align-items:center;
+justify-content:center;
+background:
+radial-gradient(ellipse at 30% 20%, rgba(124,58,237,0.25) 0%, transparent 60%),
+radial-gradient(ellipse at 70% 80%, rgba(45,212,191,0.15) 0%, transparent 60%),
+var(--bg);
+}
+
+.auth-card {
+background:var(--surface);
+border:1px solid var(--border2);
+border-radius:20px;
+padding:48px 40px;
+text-align:center;
+max-width:360px;
+width:90%;
+box-shadow:0 25px 60px rgba(0,0,0,0.5);
+}
+
+.auth-icon { font-size:40px; color:var(--accent); margin-bottom:12px; }
+.auth-title { font-size:28px; font-weight:700; margin-bottom:8px; }
+.auth-sub { font-size:14px; color:var(--text-muted); margin-bottom:24px; }
+
+/* GOOGLE BUTTON */
+.google-btn {
+display:flex; align-items:center; justify-content:center;
+gap:12px; width:100%; padding:14px;
+background:white; color:#1f1f1f;
+border:none; border-radius:12px;
+font-weight:600; cursor:pointer;
+margin-top:10px;
+}
+
+/* ===== NEW AUTH STYLES ===== */
+
+/* Inputs */
+.auth-input {
+width:100%;
+padding:12px;
+margin-bottom:10px;
+border-radius:10px;
+border:1px solid var(--border2);
+background:var(--surface2);
+color:var(--text);
+}
+
+.auth-input::placeholder { color:var(--text-muted); }
+
+.auth-input:focus {
+border-color:var(--accent);
+outline:none;
+}
+
+/* Row */
+.auth-row {
+display:flex;
+gap:10px;
+margin-bottom:10px;
+}
+
+/* Buttons */
+.auth-btn {
+width:100%;
+padding:12px;
+border-radius:10px;
+border:none;
+background:linear-gradient(135deg,var(--accent2),#4C1D95);
+color:white;
+font-weight:600;
+cursor:pointer;
+}
+
+.auth-btn:hover { opacity:0.9; }
+
+.auth-btn.outline {
+background:transparent;
+border:1px solid var(--accent);
+color:var(--accent);
+}
+
+.auth-btn.black {
+background:black;
+}
+
+/* Footer note */
+.auth-note {
+font-size:11px;
+color:var(--text-muted);
+margin-top:10px;
+}
+
+/* Recaptcha */
+#recaptcha-container {
+margin-top:8px;
+}
+
